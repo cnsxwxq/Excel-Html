@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>向心链 - Excel 转 HTML 工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="hero">
+        <div class="hero-content">
+            <h1 class="logo">向心链</h1>
+            <p class="slogan">让数据取之于民，用之于民</p>
+            <div class="divider"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="upload-section">
+            <h2 class="section-title">
+                <span class="icon">📤</span>
+                上传 Excel 文件
+            </h2>
+            <div class="file-upload-wrapper">
+                <div class="file-input-container">
+                    <input type="file" id="excelFile" accept=".xlsx,.xls">
+                    <label for="excelFile" class="file-upload-label">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">
+                            <div class="upload-title">点击选择文件或拖拽文件到此处</div>
+                            <div class="upload-subtitle">支持 .xlsx, .xls 格式</div>
+                        </div>
+                    </label>
+                </div>
+                <button id="convertBtn" class="convert-btn">
+                    <span class="btn-icon">✨</span>
+                    转换为 HTML
+                </button>
+            </div>
+        </div>
+
+        <div class="result-section">
+            <h2 class="section-title">
+                <span class="icon">📊</span>
+                生成的 HTML
+            </h2>
+            <div id="htmlResult" class="result-placeholder">
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">📝</div>
+                    <p>请先上传 Excel 文件并点击转换</p>
+                </div>
+            </div>
+            <button id="copyBtn" class="save-btn">
+                <span class="btn-icon">💾</span>
+                另存为 html
+            </button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>向心链数据平台 <span class="footer-heart">❤</span> 让数据创造更大价值</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
