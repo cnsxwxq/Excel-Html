@@ -16,49 +16,348 @@
     </div>
 
     <div class="container">
-        <div class="upload-section">
-            <h2 class="section-title">
-                <span class="icon">📤</span>
-                上传 Excel 文件
-            </h2>
-            <div class="file-upload-wrapper">
-                <div class="file-input-container">
-                    <input type="file" id="excelFile" accept=".xlsx,.xls">
-                    <label for="excelFile" class="file-upload-label">
-                        <div class="upload-icon">📁</div>
-                        <div class="upload-text">
-                            <div class="upload-title">点击选择文件或拖拽文件到此处</div>
-                            <div class="upload-subtitle">支持 .xlsx, .xls 格式</div>
-                        </div>
-                    </label>
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="convert">
+                <span class="tab-icon">📤</span>
+                Excel 转 HTML
+            </button>
+            <button class="tab-btn" data-tab="merge">
+                <span class="tab-icon">🔗</span>
+                Excel 合并
+            </button>
+        </div>
+
+        <div id="convert-tab" class="tab-content active">
+            <div class="upload-section">
+                <h2 class="section-title">
+                    <span class="icon">📤</span>
+                    上传 Excel 文件
+                </h2>
+                <div class="file-upload-wrapper">
+                    <div class="file-input-container">
+                        <input type="file" id="excelFile" accept=".xlsx,.xls">
+                        <label for="excelFile" class="file-upload-label">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text">
+                                <div class="upload-title">点击选择文件或拖拽文件到此处</div>
+                                <div class="upload-subtitle">支持 .xlsx, .xls 格式</div>
+                            </div>
+                        </label>
+                    </div>
+                    <button id="convertBtn" class="convert-btn">
+                        <span class="btn-icon">✨</span>
+                        转换为 HTML
+                    </button>
                 </div>
-                <button id="convertBtn" class="convert-btn">
-                    <span class="btn-icon">✨</span>
-                    转换为 HTML
+                
+                <div id="convertProgressSection" class="convert-progress-section" style="display: none;">
+                    <div class="convert-progress-header">
+                        <span id="convertProgressIcon" class="convert-progress-icon">⏳</span>
+                        <span id="convertProgressTitle">正在处理...</span>
+                    </div>
+                    <div class="convert-progress-bar">
+                        <div id="convertProgressFill" class="convert-progress-fill"></div>
+                    </div>
+                    <div class="convert-progress-info">
+                        <span id="convertProgressText">准备中...</span>
+                        <span id="convertProgressPercent">0%</span>
+                    </div>
+                    <div id="convertProgressDetails" class="convert-progress-details"></div>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h2 class="section-title">
+                    <span class="icon">📊</span>
+                    生成的 HTML
+                </h2>
+                <div id="htmlResult" class="result-placeholder">
+                    <div class="placeholder-content">
+                        <div class="placeholder-icon">📝</div>
+                        <p>请先上传 Excel 文件并点击转换</p>
+                    </div>
+                </div>
+                <button id="copyBtn" class="save-btn">
+                    <span class="btn-icon">💾</span>
+                    另存为 html
                 </button>
             </div>
         </div>
 
-        <div class="result-section">
-            <h2 class="section-title">
-                <span class="icon">📊</span>
-                生成的 HTML
-            </h2>
-            <div id="htmlResult" class="result-placeholder">
-                <div class="placeholder-content">
-                    <div class="placeholder-icon">📝</div>
-                    <p>请先上传 Excel 文件并点击转换</p>
+        <div id="merge-tab" class="tab-content">
+            <div class="merge-section">
+                <h2 class="section-title">
+                    <span class="icon">📁</span>
+                    选择要合并的 Excel 文件
+                </h2>
+                <div class="merge-upload-wrapper" id="mergeDropZone">
+                    <div class="merge-input-container">
+                        <input type="file" id="mergeFiles" accept=".xlsx,.xls" multiple>
+                        <label for="mergeFiles" class="merge-upload-label">
+                            <div class="upload-icon">📂</div>
+                            <div class="upload-text">
+                                <div class="upload-title">点击选择多个文件或拖拽文件到此处</div>
+                                <div class="upload-subtitle">支持 .xlsx, .xls 格式，可同时选择多个文件</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="mergeFileList" class="merge-file-list" style="display: none;">
+                    <div class="file-list-header">
+                        <span class="file-list-title">已选择的文件 (<span id="fileCount">0</span>个)</span>
+                        <button id="clearAllFiles" class="clear-btn">清空全部</button>
+                    </div>
+                    <div id="fileListContent" class="file-list-content"></div>
                 </div>
             </div>
-            <button id="copyBtn" class="save-btn">
-                <span class="btn-icon">💾</span>
-                另存为 html
-            </button>
+
+            <div class="merge-config-section">
+                <h2 class="section-title">
+                    <span class="icon">⚙️</span>
+                    合并配置
+                </h2>
+                <div class="config-options">
+                    <div class="config-option">
+                        <label class="config-label">
+                            <input type="checkbox" id="enableDedup" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>启用数据去重</span>
+                        </label>
+                        <div class="config-hint">合并时自动检测并移除重复数据行</div>
+                    </div>
+                    <div class="config-option dedup-config show" id="dedupConfig">
+                        <label class="config-label">去重依据列：</label>
+                        <select id="dedupColumn" class="config-select">
+                            <option value="all">所有列完全相同</option>
+                        </select>
+                        <div id="dedupModeExplanation" class="dedup-explanation">
+                            <div class="dedup-explanation-icon">💡</div>
+                            <div class="dedup-explanation-content">
+                                <div class="dedup-explanation-title">当前模式：全列匹配去重</div>
+                                <div class="dedup-explanation-desc">只有当一行数据的<strong>所有列</strong>内容都完全相同时，才会被视为重复行并移除。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="config-option">
+                        <label class="config-label">
+                            <input type="checkbox" id="preserveFormat" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>保留原始格式</span>
+                        </label>
+                        <div class="config-hint">尽可能保留原始数据的格式和样式</div>
+                    </div>
+                    <div class="config-option">
+                        <label class="config-label">
+                            <input type="checkbox" id="skipEmptyRows" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>跳过空行</span>
+                        </label>
+                        <div class="config-hint">合并时自动跳过完全空白的行</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="merge-action-section">
+                <button id="validateBtn" class="action-btn secondary">
+                    <span class="btn-icon">🔍</span>
+                    验证表结构
+                </button>
+                <button id="mergeBtn" class="action-btn primary" disabled>
+                    <span class="btn-icon">🔗</span>
+                    开始合并
+                </button>
+            </div>
+
+            <div id="validationResult" class="validation-section" style="display: none;">
+                <h2 class="section-title">
+                    <span class="icon">📋</span>
+                    表结构验证结果
+                </h2>
+                <div id="validationContent" class="validation-content"></div>
+            </div>
+
+            <div id="progressSection" class="progress-section" style="display: none;">
+                <h2 class="section-title">
+                    <span class="icon">⏳</span>
+                    处理进度
+                </h2>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span id="progressText">准备中...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+                <div id="progressDetails" class="progress-details"></div>
+            </div>
+
+            <div id="mergeResultSection" class="merge-result-section" style="display: none;">
+                <h2 class="section-title">
+                    <span class="icon">✅</span>
+                    合并结果
+                </h2>
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <span class="stat-icon">📊</span>
+                        <span class="stat-value" id="totalRows">0</span>
+                        <span class="stat-label">总行数</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">📁</span>
+                        <span class="stat-value" id="totalFiles">0</span>
+                        <span class="stat-label">合并文件数</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">⏱️</span>
+                        <span class="stat-value" id="processTime">0s</span>
+                        <span class="stat-label">处理时间</span>
+                    </div>
+                    <div class="stat-item" id="dedupStat" style="display: none;">
+                        <span class="stat-icon">🔄</span>
+                        <span class="stat-value" id="dedupRows">0</span>
+                        <span class="stat-label">去重行数</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="previewSection" class="preview-section" style="display: none;">
+                <h2 class="section-title">
+                    <span class="icon">👀</span>
+                    数据预览
+                    <span class="preview-info">(显示前 <span id="previewCount">100</span> 行)</span>
+                </h2>
+                <div class="preview-controls">
+                    <div class="search-filter">
+                        <input type="text" id="previewSearch" placeholder="搜索数据...">
+                        <button id="previewSearchBtn" class="small-btn">搜索</button>
+                        <button id="previewClearBtn" class="small-btn secondary">清除</button>
+                    </div>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+                <div id="previewContent" class="preview-content">
+                    <div class="table-wrapper">
+                        <table id="previewTable" class="preview-table"></table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="saveSection" class="save-section" style="display: none;">
+                <h2 class="section-title">
+                    <span class="icon">💾</span>
+                    保存合并文件
+                </h2>
+                <div class="save-config">
+                    <p class="save-hint">点击下方按钮保存合并后的Excel文件，可选择保存位置和文件名。</p>
+                    <button id="saveMergedBtn" class="save-btn">
+                        <span class="btn-icon">💾</span>
+                        保存
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="footer">
         <p>向心链数据平台 <span class="footer-heart">❤</span> 让数据创造更大价值</p>
+    </div>
+
+    <div id="errorModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-icon">⚠️</span>
+                <h3 id="errorTitle">错误提示</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div id="errorMessage" class="modal-body"></div>
+            <div class="modal-footer">
+                <button class="modal-btn" id="modalOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="saveModal" class="modal" style="display: none;">
+        <div class="modal-content save-modal-content">
+            <div class="modal-header">
+                <span class="modal-icon">💾</span>
+                <h3>保存设置</h3>
+                <button class="modal-close" id="closeSaveModal">&times;</button>
+            </div>
+            <div class="modal-body save-modal-body">
+                <div class="save-setting-group">
+                    <label class="save-setting-label">
+                        <span class="label-icon">📁</span>
+                        文件名
+                    </label>
+                    <input type="text" id="saveFileNameInput" class="save-input" placeholder="请输入文件名" value="excel-data">
+                </div>
+                <div class="save-setting-group">
+                    <label class="save-setting-label">
+                        <span class="label-icon">📄</span>
+                        文件格式
+                    </label>
+                    <select id="saveFileFormat" class="save-select">
+                        <option value="html">.html - 标准网页格式</option>
+                        <option value="htm">.htm - 简短扩展名格式</option>
+                    </select>
+                </div>
+                <div class="save-setting-group">
+                    <label class="save-setting-label">
+                        <span class="label-icon">⚙️</span>
+                        编码格式
+                    </label>
+                    <select id="saveEncoding" class="save-select">
+                        <option value="utf-8">UTF-8 - 推荐编码</option>
+                        <option value="gbk">GBK - 简体中文编码</option>
+                    </select>
+                </div>
+                <div class="save-setting-group">
+                    <label class="save-setting-label">
+                        <span class="label-icon">🎨</span>
+                        样式选项
+                    </label>
+                    <div class="save-checkbox-group">
+                        <label class="save-checkbox-label">
+                            <input type="checkbox" id="includeStyles" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>包含完整样式（推荐）</span>
+                        </label>
+                    </div>
+                    <div class="save-checkbox-group">
+                        <label class="save-checkbox-label">
+                            <input type="checkbox" id="includeSearch" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>包含搜索功能</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="save-preview">
+                    <div class="save-preview-label">文件预览：</div>
+                    <div class="save-preview-path" id="savePreviewPath">excel-data.html</div>
+                </div>
+                <div class="save-browser-hint" id="saveBrowserHint">
+                    <span class="hint-icon">💡</span>
+                    <span id="browserHintText">点击保存后可选择保存位置</span>
+                </div>
+            </div>
+            <div class="modal-footer save-modal-footer">
+                <button class="modal-btn secondary" id="saveModalCancel">取消</button>
+                <button class="modal-btn primary" id="saveModalConfirm">
+                    <span>💾</span>
+                    保存文件
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="logPanel" class="log-panel" style="display: none;">
+        <div class="log-header">
+            <span>操作日志</span>
+            <button id="toggleLog" class="log-toggle">▼</button>
+        </div>
+        <div id="logContent" class="log-content"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
