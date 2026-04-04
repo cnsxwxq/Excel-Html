@@ -1,10 +1,26 @@
+/**
+ * 向心链 - Excel 数据处理工具
+ * 主脚本文件 - 模块化版本
+ * @version 1.1.0-modular
+ */
+
 document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
+
+    // ==================== DOM 元素引用 ====================
+    
     const excelFile = document.getElementById('excelFile');
     const convertBtn = document.getElementById('convertBtn');
     const htmlResult = document.getElementById('htmlResult');
     const copyBtn = document.getElementById('copyBtn');
     const fileUploadWrapper = document.querySelector('.file-upload-wrapper');
 
+    // ==================== ConvertModule 定义 ====================
+    
+    /**
+     * ConvertModule - Excel 转 HTML 模块
+     * @module ConvertModule
+     */
     const ConvertModule = {
         isProcessing: false,
         startTime: null,
@@ -54,12 +70,26 @@ document.addEventListener('DOMContentLoaded', function() {
             convertBtn.innerHTML = '<span class="btn-icon">✨</span>转换为 HTML';
             
             this.isProcessing = false;
+            
+            // 清理大数据缓存
+            if (this.jsonData) {
+                this.jsonData = null;
+            }
+            console.log('[ConvertModule] 已清理转换状态');
         },
 
         convertAsync: function(file) {
             const self = this;
             
+            // 参数验证
+            if (!file) {
+                console.error('❌ convertAsync: file 参数为空');
+                alert('请选择一个 Excel 文件');
+                return;
+            }
+
             if (this.isProcessing) {
+                console.warn('⚠️ 正在处理中，请稍候...');
                 return;
             }
 
@@ -69,7 +99,13 @@ document.addEventListener('DOMContentLoaded', function() {
             convertBtn.innerHTML = '<span class="btn-icon">⏳</span>处理中...';
 
             this.showProgress();
-            this.updateProgress(0, '正在读取文件...', '文件大小: ' + formatFileSize(file.size));
+
+            // 使用 ExcelUtils 格式化文件大小
+            const fileSizeStr = window.ExcelUtils ? 
+                window.ExcelUtils.formatFileSize(file.size) : 
+                formatFileSizeLegacy(file.size);
+            
+            this.updateProgress(0, '正在读取文件...', '文件大小: ' + fileSizeStr);
 
             const reader = new FileReader();
 
@@ -111,10 +147,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             self.processWorksheet(worksheet, file.name);
                         });
                     } catch (err) {
+                        console.error('[ParseExcel] 错误:', err);
                         self.handleError('Excel解析失败: ' + err.message);
                     }
                 });
             } catch (err) {
+                console.error('[ParseExcel] 严重错误:', err);
                 this.handleError('文件处理失败: ' + err.message);
             }
         },
@@ -122,62 +160,80 @@ document.addEventListener('DOMContentLoaded', function() {
         processWorksheet: function(worksheet, fileName) {
             const self = this;
             
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            this.totalRows = jsonData.length;
-            
-            this.updateProgress(40, '正在分析表格结构...', '共 ' + this.totalRows + ' 行数据');
+            try {
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                this.totalRows = jsonData.length;
 
-            const originalHeaders = jsonData[0];
-            const linkColumnIndexes = [];
-            const imageColumnIndexes = [];
-            const hideColumnIndexes = [];
-            const hideColumnNames = ['拍卖平台', '标的类型', '省份', '城市'];
-
-            originalHeaders.forEach(function(header, index) {
-                if (header) {
-                    if (header.includes('链接')) {
-                        linkColumnIndexes.push(index);
-                    }
-                    if (header.includes('图片')) {
-                        imageColumnIndexes.push(index);
-                    }
-                    if (hideColumnNames.includes(header.trim())) {
-                        hideColumnIndexes.push(index);
-                    }
+                // 验证数据有效性
+                if (!jsonData || jsonData.length === 0) {
+                    throw new Error('工作表为空或无法读取');
                 }
-            });
 
-            this.updateProgress(45, '正在生成HTML结构...', '处理 ' + originalHeaders.length + ' 列');
+                this.updateProgress(40, '正在分析表格结构...', '共 ' + this.totalRows + ' 行数据');
 
-            requestAnimationFrame(function() {
-                self.generateHTML(worksheet, jsonData, originalHeaders, hideColumnIndexes, fileName);
-            });
+                const originalHeaders = jsonData[0];
+                if (!originalHeaders || originalHeaders.length === 0) {
+                    throw new Error('缺少表头信息');
+                }
+
+                const linkColumnIndexes = [];
+                const imageColumnIndexes = [];
+                const hideColumnIndexes = [];
+                const hideColumnNames = ['拍卖平台', '标的类型', '省份', '城市'];
+
+                originalHeaders.forEach(function(header, index) {
+                    if (header) {
+                        if (header.includes('链接')) {
+                            linkColumnIndexes.push(index);
+                        }
+                        if (header.includes('图片')) {
+                            imageColumnIndexes.push(index);
+                        }
+                        if (hideColumnNames.includes(header.trim())) {
+                            hideColumnIndexes.push(index);
+                        }
+                    }
+                });
+
+                this.updateProgress(45, '正在生成HTML结构...', '处理 ' + originalHeaders.length + ' 列');
+
+                requestAnimationFrame(function() {
+                    self.generateHTML(worksheet, jsonData, originalHeaders, hideColumnIndexes, fileName);
+                });
+            } catch (err) {
+                console.error('[ProcessWorksheet] 错误:', err);
+                this.handleError('数据处理失败: ' + err.message);
+            }
         },
 
         generateHTML: function(worksheet, jsonData, originalHeaders, hideColumnIndexes, fileName) {
             const self = this;
             
-            let html = XLSX.utils.sheet_to_html(worksheet, {
-                header: '<tr style="background-color: #4CAF50; color: white;">',
-                footer: '</tr>',
-                tableClass: 'hybrid-table'
-            });
+            try {
+                let html = XLSX.utils.sheet_to_html(worksheet, {
+                    header: '<tr style="background-color: #4CAF50; color: white;">',
+                    footer: '</tr>',
+                    tableClass: 'hybrid-table'
+                });
 
-            html = html.replace('<table>', '<table class="hybrid-table">');
+                html = html.replace('<table>', '<table class="hybrid-table">');
 
-            this.updateProgress(55, '正在处理DOM结构...', '解析HTML');
+                this.updateProgress(55, '正在处理DOM结构...', '解析HTML');
 
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const table = doc.querySelector('table');
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const table = doc.querySelector('table');
 
-            if (!table) {
-                this.handleError('HTML生成失败');
-                return;
+                if (!table) {
+                    throw new Error('HTML生成失败：无法找到表格元素');
+                }
+
+                const rows = table.querySelectorAll('tr');
+                this.processRowsChunked(rows, hideColumnIndexes, doc, fileName, table);
+            } catch (err) {
+                console.error('[GenerateHTML] 错误:', err);
+                this.handleError('HTML生成失败: ' + err.message);
             }
-
-            const rows = table.querySelectorAll('tr');
-            this.processRowsChunked(rows, hideColumnIndexes, doc, fileName, table);
         },
 
         processRowsChunked: function(rows, hideColumnIndexes, doc, fileName, table) {
@@ -186,7 +242,22 @@ document.addEventListener('DOMContentLoaded', function() {
             let currentRow = 0;
             let headers = [];
 
+            // 动态调整 chunk 大小
+            if (totalRows > 5000) {
+                this.chunkSize = 50;
+            } else if (totalRows > 1000) {
+                this.chunkSize = 100;
+            } else {
+                this.chunkSize = 200;
+            }
+
+            // 处理表头行
             const headerRow = rows[0];
+            if (!headerRow) {
+                this.handleError('无法找到表头行');
+                return;
+            }
+
             if (hideColumnIndexes.length > 0) {
                 const headerCells = headerRow.querySelectorAll('td, th');
                 for (let j = hideColumnIndexes.length - 1; j >= 0; j--) {
@@ -206,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             function processChunk() {
                 const endIndex = Math.min(currentRow + self.chunkSize, totalRows);
+                const fragment = doc.createDocumentFragment();
 
                 for (let i = Math.max(1, currentRow); i < endIndex; i++) {
                     const row = rows[i];
@@ -257,6 +329,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         }
                     }
+
+                    fragment.appendChild(row);
+                }
+
+                const tbody = table.querySelector('tbody');
+                if (tbody) {
+                    tbody.appendChild(fragment);
+                } else {
+                    const newTbody = doc.createElement('tbody');
+                    newTbody.appendChild(fragment);
+                    table.appendChild(newTbody);
                 }
 
                 currentRow = endIndex;
@@ -286,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (!html || html.trim() === '') {
                     console.error('[ERROR] HTML内容为空');
-                    self.handleError('HTML内容生成失败：表格内容为空');
+                    this.handleError('HTML内容生成失败：表格内容为空');
                     return;
                 }
 
@@ -322,6 +405,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 convertBtn.innerHTML = '<span class="btn-icon">✅</span>转换完成，请上传新文件';
                                 
                                 self.hideProgress(true);
+                                
+                                // 触发转换完成事件
+                                if (window.ExcelApp) {
+                                    window.ExcelApp.emit('convert:complete', {
+                                        duration: Date.now() - self.startTime,
+                                        rowCount: self.totalRows
+                                    });
+                                }
                             } catch (renderErr) {
                                 console.error('[ERROR] 渲染阶段错误:', renderErr);
                                 self.handleError('界面更新失败: ' + renderErr.message);
@@ -334,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 0);
             } catch (htmlErr) {
                 console.error('[ERROR] HTML生成阶段错误:', htmlErr);
-                self.handleError('HTML生成失败: ' + htmlErr.message);
+                this.handleError('HTML生成失败: ' + htmlErr.message);
             }
         },
 
@@ -815,13 +906,29 @@ document.addEventListener('DOMContentLoaded', function() {
         },
 
         handleError: function(message) {
+            console.error('[ConvertModule] 错误:', message);
             this.isProcessing = false;
             convertBtn.disabled = false;
             convertBtn.innerHTML = '<span class="btn-icon">✨</span>转换为 HTML';
             this.hideProgress(false);
             alert('转换失败: ' + message);
+            
+            // 触发错误事件
+            if (window.ExcelApp) {
+                window.ExcelApp.emit('convert:error', { message: message });
+            }
         }
     };
+
+    // ==================== 兼容性工具函数（保留用于回退）====================
+
+    function formatFileSizeLegacy(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // ==================== 拖拽上传事件绑定 ====================
 
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         document.addEventListener(eventName, preventDefaults, false);
@@ -842,13 +949,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const fileInfo = document.createElement('div');
         fileInfo.className = 'file-success-message';
+
+        // 使用 ExcelUtils 或回退到本地函数
+        const formatFn = window.ExcelUtils && window.ExcelUtils.formatFileSize ? 
+            window.ExcelUtils.formatFileSize : formatFileSizeLegacy;
+        
         fileInfo.innerHTML = `
             <div class="file-info-content">
                 <div class="file-icon">✅</div>
                 <div class="file-details">
-                    <div class="file-name">${file.name}</div>
+                    <div class="file-name">${window.ExcelUtils ? window.ExcelUtils.escapeHtml(file.name) : file.name}</div>
                     <div class="file-meta">
-                        <span>大小：${formatFileSize(file.size)}</span>
+                        <span>大小：${formatFn(file.size)}</span>
                         <span>类型：${file.type || 'Excel 文件'}</span>
                         <span>上传时间：${new Date().toLocaleTimeString('zh-CN')}</span>
                     </div>
@@ -864,12 +976,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (existingMessage) {
             existingMessage.remove();
         }
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
 
     fileInputContainer.addEventListener('dragenter', () => {
@@ -926,7 +1032,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // 直接保存，使用默认参数
         const fileName = 'excel-data';
         const format = 'html';
         const encoding = 'utf-8';
@@ -1058,7 +1163,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             let saveHandle = null;
-            const self = this;
             
             window.showSaveFilePicker(options)
                 .then(function(handle) {
@@ -1144,7 +1248,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }, 5000);
     }
+
+    // ==================== 注册 ConvertModule 到 ExcelApp ====================
+    
+    if (window.ExcelApp) {
+        // 创建包装器
+        const ConvertModuleWrapper = {
+            version: '1.1.0-modular',
+            
+            // 保持原有接口
+            convertAsync: function(file) {
+                return ConvertModule.convertAsync(file);
+            },
+            
+            resetConvertState: function() {
+                return ConvertModule.resetConvertState();
+            },
+            
+            // 状态查询
+            getIsProcessing: function() {
+                return ConvertModule.isProcessing;
+            },
+            
+            getStats: function() {
+                return {
+                    totalRows: ConvertModule.totalRows,
+                    processedRows: ConvertModule.processedRows,
+                    startTime: ConvertModule.startTime,
+                    isProcessing: ConvertModule.isProcessing
+                };
+            },
+            
+            // 原始模块引用（兼容）
+            _internal: ConvertModule
+        };
+
+        // 注册模块
+        window.ExcelApp.register('convert', ConvertModuleWrapper);
+        
+        console.log('✅ ConvertModule 已注册到 ExcelApp');
+    } else {
+        console.warn('⚠️ ExcelApp 未加载，ConvertModule 以独立模式运行');
+        window.ConvertModule = ConvertModule;
+    }
 });
+
+// ==================== MergeModule（独立 IIFE）====================
 
 (function() {
     'use strict';
@@ -1169,6 +1318,7 @@ document.addEventListener('DOMContentLoaded', function() {
         init: function() {
             this.bindEvents();
             this.initLogPanel();
+            console.log('🚀 MergeModule 初始化完成');
         },
 
         bindEvents: function() {
@@ -1352,17 +1502,26 @@ document.addEventListener('DOMContentLoaded', function() {
             fileList.style.display = 'block';
             fileCount.textContent = this.files.length;
 
+            // 缓存工具函数引用
+            const formatDateFn = window.ExcelUtils && window.ExcelUtils.formatDate ?
+                window.ExcelUtils.formatDate : function(ts) { return new Date(ts).toLocaleString(); };
+            const formatFileSizeFn = window.ExcelUtils && window.ExcelUtils.formatFileSize ?
+                window.ExcelUtils.formatFileSize : formatFileSizeLegacy;
+            const escapeHtmlFn = window.ExcelUtils && window.ExcelUtils.escapeHtml ?
+                window.ExcelUtils.escapeHtml : function(t) { return t; };
+
             const self = this;
             fileListContent.innerHTML = this.files.map(function(file, index) {
                 const status = self.getFileStatus(index);
+                
                 return '<div class="file-item ' + status.class + '" data-index="' + index + '">' +
                     '<div class="file-item-info">' +
                     '<div class="file-item-icon">' + status.icon + '</div>' +
                     '<div class="file-item-details">' +
-                    '<div class="file-item-name">' + self.escapeHtml(file.name) + '</div>' +
+                    '<div class="file-item-name">' + escapeHtmlFn(file.name) + '</div>' +
                     '<div class="file-item-meta">' +
-                    '<span>大小: ' + self.formatFileSize(file.size) + '</span>' +
-                    '<span>修改: ' + self.formatDate(file.lastModified) + '</span>' +
+                    '<span>大小: ' + formatFileSizeFn(file.size) + '</span>' +
+                    '<span>修改: ' + formatDateFn(file.lastModified) + '</span>' +
                     '</div>' +
                     '</div>' +
                     '</div>' +
@@ -1565,6 +1724,14 @@ document.addEventListener('DOMContentLoaded', function() {
             this.renderFileList();
 
             this.log('success', '验证完成，可以开始合并');
+
+            // 触发验证完成事件
+            if (window.ExcelApp) {
+                window.ExcelApp.emit('merge:validationComplete', {
+                    validFiles: validFiles.length,
+                    headers: this.headers
+                });
+            }
         },
 
         validateStructure: function(fileDataList) {
@@ -1655,7 +1822,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<thead><tr><th>列号</th><th>列名</th>';
 
             comparison.files.forEach(function(fileName) {
-                html += '<th>' + this.escapeHtml(fileName.substring(0, 15)) + '</th>';
+                html += '<th>' + (window.ExcelUtils ? window.ExcelUtils.escapeHtml(fileName.substring(0, 15)) : fileName.substring(0, 15)) + '</th>';
             }, this);
 
             html += '</tr></thead><tbody>';
@@ -1664,7 +1831,7 @@ document.addEventListener('DOMContentLoaded', function() {
             comparison.headers.forEach(function(header, colIndex) {
                 html += '<tr>';
                 html += '<td>' + (colIndex + 1) + '</td>';
-                html += '<td>' + self.escapeHtml(header) + '</td>';
+                html += '<td>' + (window.ExcelUtils ? window.ExcelUtils.escapeHtml(header) : header) + '</td>';
 
                 comparison.files.forEach(function(fileName, fileIndex) {
                     if (fileIndex === 0) {
@@ -1686,7 +1853,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const mismatch = result.mismatches.find(function(m) {
                             return m.index === colIndex;
                         });
-                        html += '<td class="mismatch" title="期望: ' + self.escapeHtml(mismatch.expected) + ', 实际: ' + self.escapeHtml(mismatch.actual) + '">❌</td>';
+                        html += '<td class="mismatch" title="期望: ' + (mismatch ? mismatch.expected : '') + ', 实际: ' + (mismatch ? mismatch.actual : '') + '">❌</td>';
                     } else {
                         html += '<td class="match">✅</td>';
                     }
@@ -1728,7 +1895,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const columnName = this.headers[parseInt(selectedValue)] || '未知列';
                 explanation.classList.add('example-mode');
                 titleEl.textContent = '当前模式：单列匹配去重';
-                descEl.innerHTML = '只根据<strong>' + this.escapeHtml(columnName) + '</strong>列的内容判断重复。只要该列值相同，无论其他列是否相同，都会被视为重复行。';
+                descEl.innerHTML = '只根据<strong>' + (window.ExcelUtils ? window.ExcelUtils.escapeHtml(columnName) : columnName) + '</strong>列的内容判断重复。只要该列值相同，无论其他列是否相同，都会被视为重复行。';
             }
         },
 
@@ -1770,25 +1937,43 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             let processedRows = 0;
+            let currentFileIndex = 0;
+            const FILE_CHUNK_SIZE = 5;
 
-            validFiles.forEach(function(fileData, fileIndex) {
-                self.updateProgress(
-                    Math.round((processedRows / totalRows) * 80),
-                    '正在处理: ' + fileData.fileName
-                );
+            const processFileChunk = function() {
+                const endIndex = Math.min(currentFileIndex + FILE_CHUNK_SIZE, validFiles.length);
 
-                fileData.rows.forEach(function(row) {
-                    if (skipEmptyRows) {
-                        const isEmpty = row.every(function(cell) {
-                            return cell === '' || cell === null || cell === undefined;
-                        });
-                        if (isEmpty) return;
-                    }
+                for (let i = currentFileIndex; i < endIndex; i++) {
+                    const fileData = validFiles[i];
+                    
+                    self.updateProgress(
+                        Math.round((processedRows / totalRows) * 80),
+                        '正在处理：' + fileData.fileName
+                    );
 
-                    allRows.push(row.slice());
-                    processedRows++;
-                });
-            });
+                    fileData.rows.forEach(function(row) {
+                        if (skipEmptyRows) {
+                            const isEmpty = row.every(function(cell) {
+                                return cell === '' || cell === null || cell === undefined;
+                            });
+                            if (isEmpty) return;
+                        }
+
+                        allRows.push(row.slice());
+                        processedRows++;
+                    });
+                }
+
+                currentFileIndex = endIndex;
+
+                if (currentFileIndex < validFiles.length) {
+                    requestAnimationFrame(processFileChunk);
+                } else {
+                    self.finalizeMerge(allRows, enableDedup, dedupColumn, validFiles);
+                }
+            };
+
+            processFileChunk();
 
             this.updateProgress(80, '正在合并数据...');
             this.log('info', '合并完成，共 ' + allRows.length + ' 行');
@@ -1828,6 +2013,16 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 self.scrollToResults();
             }, 500);
+
+            // 触发合并完成事件
+            if (window.ExcelApp) {
+                window.ExcelApp.emit('merge:complete', {
+                    totalRows: allRows.length,
+                    fileCount: validFiles.length,
+                    processTime: processTime,
+                    dedupCount: dedupCount
+                });
+            }
         },
 
         deduplicateRows: function(rows, dedupColumn) {
@@ -1901,7 +2096,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const sortClass = this.sortColumn === index ?
                     (this.sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
                 html += '<th class="' + sortClass + '" onclick="window.MergeModule.sortTable(' + index + ')">' +
-                    this.escapeHtml(header) + '</th>';
+                    (window.ExcelUtils ? window.ExcelUtils.escapeHtml(header) : header) + '</th>';
             }, this);
             html += '</tr></thead><tbody>';
 
@@ -1912,7 +2107,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 html += '<tr>';
                 this.mergedData.headers.forEach(function(header, index) {
                     const cellValue = data[i][index];
-                    html += '<td>' + this.escapeHtml(String(cellValue !== undefined ? cellValue : '')) + '</td>';
+                    html += '<td>' + (window.ExcelUtils ? window.ExcelUtils.escapeHtml(String(cellValue !== undefined ? cellValue : '')) : String(cellValue !== undefined ? cellValue : '')) + '</td>';
                 }, this);
                 html += '</tr>';
             }
@@ -2219,7 +2414,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             modalIcon.textContent = icon;
             modalTitle.textContent = title;
-            modalBody.innerHTML = '<p>' + this.escapeHtml(message) + '</p>';
+            modalBody.innerHTML = '<p>' + (window.ExcelUtils ? window.ExcelUtils.escapeHtml(message) : message) + '</p>';
 
             modal.style.display = 'flex';
         },
@@ -2246,7 +2441,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const entry = document.createElement('div');
             entry.className = 'log-entry ' + type;
-            entry.innerHTML = '<span class="log-time">[' + timeStr + ']</span>' + this.escapeHtml(message);
+            entry.innerHTML = '<span class="log-time">[' + timeStr + ']</span>' + (window.ExcelUtils ? window.ExcelUtils.escapeHtml(message) : message);
             logContent.appendChild(entry);
             logContent.scrollTop = logContent.scrollHeight;
 
@@ -2267,36 +2462,104 @@ document.addEventListener('DOMContentLoaded', function() {
                 logContent.style.display = 'none';
                 toggleBtn.textContent = '▲';
             }
-        },
-
-        formatFileSize: function(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-        },
-
-        formatDate: function(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        },
-
-        escapeHtml: function(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
     };
 
-    window.MergeModule = MergeModule;
+    // ==================== 注册 MergeModule 到 ExcelApp ====================
+    
+    if (window.ExcelApp) {
+        // 创建包装器
+        const MergeModuleWrapper = {
+            version: '1.1.0-modular',
+            
+            // 保持原有接口
+            init: function() {
+                return MergeModule.init();
+            },
+            
+            addFiles: function(files) {
+                return MergeModule.addFiles(files);
+            },
+            
+            removeFile: function(index) {
+                return MergeModule.removeFile(index);
+            },
+            
+            validateFiles: function() {
+                return MergeModule.validateFiles();
+            },
+            
+            mergeFiles: function() {
+                return MergeModule.mergeFiles();
+            },
+            
+            // 状态查询
+            getState: function() {
+                return {
+                    files: MergeModule.files,
+                    isProcessing: MergeModule.isProcessing,
+                    validationPassed: MergeModule.validationPassed,
+                    mergeCompleted: MergeModule.mergeCompleted,
+                    mergedData: MergeModule.mergedData
+                };
+            },
+            
+            getLogs: function() {
+                return [...MergeModule.logs];
+            },
+            
+            // 内存清理方法
+            resetMergeResult: function() {
+                MergeModule.mergedData = null;
+                MergeModule.filteredData = null;
+                MergeModule.fileData = [];
+                MergeModule.files = [];
+                MergeModule.headers = [];
+                console.log('[MergeModule] 已清理合并结果，释放内存');
+            },
+            
+            // 原始模块引用（兼容）
+            _internal: MergeModule
+        };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
+        // 注册模块
+        window.ExcelApp.register('merge', MergeModuleWrapper);
+        
+        // 设置全局引用（保持向后兼容）
+        window.MergeModule = MergeModuleWrapper;
+        
+        console.log('✅ MergeModule 已注册到 ExcelApp');
+
+        // 初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                MergeModule.init();
+            });
+        } else {
             MergeModule.init();
-        });
+        }
     } else {
-        MergeModule.init();
+        console.warn('⚠️ ExcelApp 未加载，MergeModule 以独立模式运行');
+        window.MergeModule = MergeModule;
+        
+        // 初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                MergeModule.init();
+            });
+        } else {
+            MergeModule.init();
+        }
     }
 })();
+
+// ==================== 应用就绪通知 ====================
+
+if (window.ExcelApp) {
+    // 延迟通知，确保所有模块都已注册
+    setTimeout(function() {
+        window.ExcelApp.notifyReady();
+    }, 100);
+}
+
+console.log('🎉 向心链应用 v1.1.0-modular 加载完成');
