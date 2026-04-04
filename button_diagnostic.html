@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按钮诊断测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .result.success {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        .result.error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+        .result.info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            color: #1565c0;
+        }
+        button {
+            margin: 5px;
+        }
+        #logContainer {
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 3px;
+            border-left: 2px solid #0f0;
+            padding-left: 8px;
+        }
+        .log-entry.error { border-left-color: #f00; color: #f99; }
+        .log-entry.success { border-left-color: #0f0; color: #9f9; }
+        .log-entry.info { border-left-color: #00f; color: #99f; }
+    </style>
+</head>
+<body>
+    <h1>🔍 按钮功能诊断</h1>
+    
+    <div class="test-section">
+        <h2>测试 1：直接 DOM 操作测试</h2>
+        <button id="testBtn1">测试按钮 1（直接绑定）</button>
+        <button id="testBtn2">测试按钮 2（属性检查）</button>
+        <button id="testBtn3">测试按钮 3（样式检查）</button>
+        <div id="test1Result" class="result info" style="display:none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 2：真实标签按钮测试</h2>
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="convert">
+                <span class="tab-icon">📤</span>
+                Excel 转 HTML
+            </button>
+            <button class="tab-btn" data-tab="merge">
+                <span class="tab-icon">🔗</span>
+                Excel 合并
+            </button>
+        </div>
+        <div id="convert-tab" class="tab-content active" style="padding:20px;">
+            <p>这是 Excel 转 HTML 页面内容</p>
+        </div>
+        <div id="merge-tab" class="tab-content" style="padding:20px; display:none;">
+            <p>这是 Excel 合并页面内容</p>
+        </div>
+        <div id="test2Result" class="result info" style="display:none; margin-top:15px;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 3：加载完整脚本后测试</h2>
+        <p>点击下方按钮测试真实环境：</p>
+        <button id="realMergeBtn" class="tab-btn" data-tab="merge">
+            <span class="tab-icon">🔗</span>
+            Excel 合并（真实环境）
+        </button>
+        <div id="test3Result" class="result info" style="display:none; margin-top:15px;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>实时日志</h2>
+        <div id="logContainer"></div>
+    </div>
+    
+    <script>
+        // 日志系统
+        const Logger = {
+            log: function(msg, type = 'info') {
+                const container = document.getElementById('logContainer');
+                const entry = document.createElement('div');
+                entry.className = 'log-entry ' + type;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                container.appendChild(entry);
+                container.scrollTop = container.scrollHeight;
+                console.log(`[${type.toUpperCase()}]`, msg);
+            }
+        };
+        
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            Logger.log('=== 页面加载完成 ===', 'success');
+            
+            // 测试 1：直接绑定测试
+            Logger.log('开始测试 1：直接 DOM 操作测试');
+            const testBtn1 = document.getElementById('testBtn1');
+            testBtn1.addEventListener('click', function() {
+                Logger.log('测试按钮 1 被点击！', 'success');
+                const result = document.getElementById('test1Result');
+                result.style.display = 'block';
+                result.className = 'result success';
+                result.textContent = '✅ 测试按钮 1 点击成功 - 事件绑定正常';
+            });
+            
+            // 测试 2：属性检查
+            const testBtn2 = document.getElementById('testBtn2');
+            testBtn2.addEventListener('click', function() {
+                Logger.log('测试按钮 2 被点击，开始检查属性...');
+                const result = document.getElementById('test1Result');
+                result.style.display = 'block';
+                result.className = 'result info';
+                
+                const checks = {
+                    'disabled 属性': this.disabled ? 'true' : 'false',
+                    'tabIndex': this.tabIndex,
+                    'aria-disabled': this.getAttribute('aria-disabled'),
+                    'pointer-events': window.getComputedStyle(this).pointerEvents,
+                    'cursor': window.getComputedStyle(this).cursor,
+                    'display': window.getComputedStyle(this).display,
+                    'visibility': window.getComputedStyle(this).visibility,
+                    'opacity': window.getComputedStyle(this).opacity
+                };
+                
+                let output = '按钮属性检查结果:\n';
+                for (let key in checks) {
+                    output += `  ${key}: ${checks[key]}\n`;
+                }
+                result.textContent = output;
+                Logger.log('属性检查完成', 'success');
+            });
+            
+            // 测试 3：样式检查
+            const testBtn3 = document.getElementById('testBtn3');
+            testBtn3.addEventListener('click', function() {
+                Logger.log('测试按钮 3 被点击，开始检查样式...');
+                const styles = window.getComputedStyle(this);
+                const result = document.getElementById('test1Result');
+                result.style.display = 'block';
+                result.className = 'result info';
+                result.textContent = `cursor: ${styles.cursor}\npointer-events: ${styles.pointerEvents}\nopacity: ${styles.opacity}`;
+                Logger.log('样式检查完成', 'success');
+            });
+            
+            // 测试 2：真实标签按钮
+            Logger.log('开始测试 2：真实标签按钮');
+            const realTabBtns = document.querySelectorAll('.tab-btn');
+            Logger.log(`找到 ${realTabBtns.length} 个标签按钮`);
+            
+            realTabBtns.forEach((btn, index) => {
+                Logger.log(`  按钮 ${index}: data-tab="${btn.dataset.tab}", class="${btn.className}"`);
+                
+                btn.addEventListener('click', function(e) {
+                    Logger.log(`=== 标签按钮 ${this.dataset.tab} 被点击 ===`, 'success');
+                    
+                    // 执行切换
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('active');
+                        Logger.log(`  移除按钮 ${b.dataset.tab} 的 active 类`);
+                    });
+                    document.querySelectorAll('.tab-content').forEach(c => {
+                        c.classList.remove('active');
+                        c.style.display = 'none';
+                        Logger.log(`  隐藏内容 ${c.id}`);
+                    });
+                    
+                    this.classList.add('active');
+                    const targetContent = document.getElementById(this.dataset.tab + '-tab');
+                    targetContent.classList.add('active');
+                    targetContent.style.display = 'block';
+                    
+                    Logger.log(`  激活按钮 ${this.dataset.tab}`, 'success');
+                    Logger.log(`  显示内容 ${targetContent.id}`, 'success');
+                    
+                    // 显示结果
+                    const result = document.getElementById('test2Result');
+                    result.style.display = 'block';
+                    result.className = 'result success';
+                    result.textContent = `✅ 标签切换成功！\n当前激活：${this.dataset.tab}\n内容可见性：${window.getComputedStyle(targetContent).display}`;
+                });
+            });
+            
+            // 测试 3：准备真实环境测试
+            Logger.log('=== 所有基础测试完成 ===', 'success');
+        });
+        
+        // 全局错误捕获
+        window.addEventListener('error', function(e) {
+            Logger.log(`全局错误：${e.message}`, 'error');
+        });
+    </script>
+    
+    <!-- 加载完整脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="utils.js"></script>
+    <script src="app-core.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        // 测试真实环境
+        document.getElementById('realMergeBtn').addEventListener('click', function(e) {
+            Logger.log('=== 真实环境测试按钮被点击 ===', 'success');
+            const result = document.getElementById('test3Result');
+            result.style.display = 'block';
+            
+            // 检查 MergeModule 是否存在
+            if (typeof window.MergeModule !== 'undefined') {
+                Logger.log('MergeModule 已加载', 'success');
+                Logger.log(`MergeModule 类型：${typeof window.MergeModule}`, 'info');
+                Logger.log(`switchTab 方法：${typeof window.MergeModule.switchTab}`, 'info');
+                
+                if (typeof window.MergeModule.switchTab === 'function') {
+                    Logger.log('调用 switchTab 方法...', 'info');
+                    window.MergeModule.switchTab('merge');
+                    
+                    result.className = 'result success';
+                    result.textContent = '✅ MergeModule.switchTab 调用成功！';
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ switchTab 方法不存在';
+                }
+            } else {
+                result.className = 'result error';
+                result.textContent = '❌ MergeModule 未加载';
+            }
+        });
+    </script>
+</body>
+</html>

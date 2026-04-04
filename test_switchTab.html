@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速测试 - switchTab</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #4f46e5;
+        }
+        .success { border-left-color: #22c55e; }
+        .error { border-left-color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 测试 MergeModule.switchTab</h1>
+        
+        <div class="test-section">
+            <h3>测试步骤：</h3>
+            <ol>
+                <li>点击下方测试按钮</li>
+                <li>查看日志输出</li>
+                <li>如果看到 "✅ switchTab 方法存在"，说明修复成功</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h3>测试按钮：</h3>
+            <button onclick="testSwitchTab()">测试 switchTab 方法</button>
+            <button onclick="testAddFiles()">测试 addFiles 方法</button>
+            <button onclick="testClearAllFiles()">测试 clearAllFiles 方法</button>
+            <button onclick="clearLogs()">清空日志</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>日志输出：</h3>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const logEl = document.getElementById('log');
+        
+        function addLog(message, type = 'info') {
+            const now = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${now}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            logEl.innerHTML = '';
+            addLog('日志已清空', 'success');
+        }
+        
+        function testSwitchTab() {
+            addLog('====== 测试 switchTab 方法 ======', 'info');
+            
+            if (typeof window.MergeModule !== 'undefined') {
+                addLog('✅ MergeModule 存在', 'success');
+                
+                if (typeof window.MergeModule.switchTab === 'function') {
+                    addLog('✅ switchTab 方法存在', 'success');
+                    
+                    try {
+                        addLog('调用 switchTab("convert")...');
+                        window.MergeModule.switchTab('convert');
+                        addLog('✅ switchTab 调用成功', 'success');
+                    } catch (e) {
+                        addLog('❌ switchTab 调用失败：' + e.message, 'error');
+                    }
+                } else {
+                    addLog('❌ switchTab 方法不存在', 'error');
+                }
+            } else {
+                addLog('❌ MergeModule 未定义', 'error');
+            }
+        }
+        
+        function testAddFiles() {
+            addLog('====== 测试 addFiles 方法 ======', 'info');
+            
+            if (typeof window.MergeModule !== 'undefined') {
+                if (typeof window.MergeModule.addFiles === 'function') {
+                    addLog('✅ addFiles 方法存在', 'success');
+                } else {
+                    addLog('❌ addFiles 方法不存在', 'error');
+                }
+            } else {
+                addLog('❌ MergeModule 未定义', 'error');
+            }
+        }
+        
+        function testClearAllFiles() {
+            addLog('====== 测试 clearAllFiles 方法 ======', 'info');
+            
+            if (typeof window.MergeModule !== 'undefined') {
+                if (typeof window.MergeModule.clearAllFiles === 'function') {
+                    addLog('✅ clearAllFiles 方法存在', 'success');
+                } else {
+                    addLog('❌ clearAllFiles 方法不存在', 'error');
+                }
+            } else {
+                addLog('❌ MergeModule 未定义', 'error');
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('DOMContentLoaded', function() {
+            addLog('页面加载完成', 'success');
+            
+            setTimeout(function() {
+                if (typeof window.MergeModule !== 'undefined') {
+                    addLog('✅ MergeModule 已加载', 'success');
+                    addLog('版本：' + (window.MergeModule.version || '未知'), 'info');
+                } else {
+                    addLog('⚠️ MergeModule 尚未加载，请稍后重试', 'error');
+                }
+            }, 1000);
+        });
+    </script>
+    
+    <!-- 加载主脚本 -->
+    <script src="script.js"></script>
+</body>
+</html>

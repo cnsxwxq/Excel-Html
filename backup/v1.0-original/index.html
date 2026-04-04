@@ -361,62 +361,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="utils.js"></script>
-    <script src="app-core.js"></script>
     <script src="script.js"></script>
-    
-    <!-- 强制绑定标签按钮事件 -->
-    <script>
-        (function() {
-            console.log('🔧 开始强制绑定标签按钮事件...');
-            
-            function forceBindTabEvents() {
-                const tabBtns = document.querySelectorAll('.tab-btn');
-                console.log('找到标签按钮数量:', tabBtns.length);
-                
-                tabBtns.forEach(function(btn) {
-                    console.log('绑定按钮:', btn.dataset.tab);
-                    
-                    // 移除所有旧的事件监听器（通过克隆）
-                    const newBtn = btn.cloneNode(true);
-                    btn.parentNode.replaceChild(newBtn, btn);
-                    
-                    // 绑定新的事件监听器
-                    newBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        console.log('标签按钮被点击:', this.dataset.tab);
-                        
-                        // 移除所有 active 状态
-                        document.querySelectorAll('.tab-btn').forEach(function(b) {
-                            b.classList.remove('active');
-                        });
-                        document.querySelectorAll('.tab-content').forEach(function(c) {
-                            c.classList.remove('active');
-                        });
-                        
-                        // 添加 active 状态到目标
-                        this.classList.add('active');
-                        const targetContent = document.getElementById(this.dataset.tab + '-tab');
-                        if (targetContent) {
-                            targetContent.classList.add('active');
-                            console.log('✅ 标签切换成功:', this.dataset.tab);
-                        } else {
-                            console.error('❌ 找不到目标内容:', this.dataset.tab + '-tab');
-                        }
-                    });
-                    
-                    console.log('✅ 按钮已绑定:', newBtn.dataset.tab);
-                });
-                
-                console.log('✅ 所有标签按钮事件绑定完成');
-            }
-            
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', forceBindTabEvents);
-            } else {
-                setTimeout(forceBindTabEvents, 100);
-            }
-        })();
-    </script>
 </body>
 </html>

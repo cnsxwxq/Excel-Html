@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按钮点击测试 - 最简版本</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+        .container { background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; }
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            background: #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        .tab-btn:hover { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+        .tab-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .tab-content { display: none; padding: 20px; border: 2px solid #e0e0e0; border-radius: 8px; }
+        .tab-content.active { display: block; }
+        #log { background: #000; color: #0f0; padding: 15px; border-radius: 5px; margin-top: 20px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .status.success { background: #4caf50; color: white; }
+        .status.error { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 按钮点击测试</h1>
+        
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="convert" id="btn1">
+                Excel 转 HTML
+            </button>
+            <button class="tab-btn" data-tab="merge" id="btn2">
+                Excel 合并
+            </button>
+        </div>
+        
+        <div id="convert-tab" class="tab-content active">
+            <h3>Excel 转 HTML 页面</h3>
+            <p>这是转换页面的内容</p>
+        </div>
+        
+        <div id="merge-tab" class="tab-content">
+            <h3>Excel 合并页面</h3>
+            <p>这是合并页面的内容</p>
+        </div>
+        
+        <div id="status"></div>
+        <div id="log"></div>
+    </div>
+    
+    <script>
+        const log = function(msg) {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(msg);
+        };
+        
+        const showStatus = function(msg, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${msg}</div>`;
+        };
+        
+        // 方法 1：直接绑定事件
+        log('=== 方法 1：直接绑定事件 ===');
+        const btn1 = document.getElementById('btn1');
+        const btn2 = document.getElementById('btn2');
+        
+        btn1.addEventListener('click', function(e) {
+            log('按钮 1 被点击！');
+            log(`  event.target: ${e.target.tagName}`);
+            log(`  this.dataset.tab: ${this.dataset.tab}`);
+            switchTab(this.dataset.tab);
+        });
+        
+        btn2.addEventListener('click', function(e) {
+            log('按钮 2 被点击！');
+            log(`  event.target: ${e.target.tagName}`);
+            log(`  this.dataset.tab: ${this.dataset.tab}`);
+            switchTab(this.dataset.tab);
+        });
+        
+        log('事件绑定完成');
+        
+        // 切换标签函数
+        function switchTab(tabId) {
+            log(`>>> switchTab 被调用：${tabId}`);
+            
+            // 移除所有 active
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 添加 active
+            const targetBtn = document.querySelector(`[data-tab="${tabId}"]`);
+            const targetContent = document.getElementById(`${tabId}-tab`);
+            
+            log(`目标按钮：${targetBtn ? '找到' : '未找到'}`);
+            log(`目标内容：${targetContent ? '找到' : '未找到'}`);
+            
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+                log('已激活目标按钮');
+            }
+            
+            if (targetContent) {
+                targetContent.classList.add('active');
+                log('已激活目标内容');
+                
+                // 验证显示状态
+                const display = window.getComputedStyle(targetContent).display;
+                log(`内容显示状态：${display}`);
+                
+                if (display === 'block') {
+                    showStatus(`✅ 标签切换成功！当前显示：${tabId}`, 'success');
+                } else {
+                    showStatus(`❌ 标签切换失败！内容不可见 (display: ${display})`, 'error');
+                }
+            }
+        }
+        
+        // 页面加载完成
+        window.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成');
+            log(`按钮 1 存在：${!!btn1}`);
+            log(`按钮 2 存在：${!!btn2}`);
+            log(`按钮 1 的 dataset.tab: ${btn1.dataset.tab}`);
+            log(`按钮 2 的 dataset.tab: ${btn2.dataset.tab}`);
+            showStatus('请点击"Excel 合并"按钮测试', 'success');
+        });
+    </script>
+</body>
+</html>

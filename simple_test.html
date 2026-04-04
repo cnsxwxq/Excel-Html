@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="convert">Excel 转 HTML</button>
+            <button class="tab-btn" data-tab="merge">Excel 合并</button>
+        </div>
+
+        <div id="convert-tab" class="tab-content active">
+            <div class="upload-section">
+                <div class="file-upload-wrapper">
+                    <div class="file-input-container">
+                        <input type="file" id="excelFile" accept=".xlsx,.xls">
+                        <label for="excelFile" class="file-upload-label">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text">
+                                <div class="upload-title">选择文件</div>
+                            </div>
+                        </label>
+                    </div>
+                    <button id="convertBtn" class="convert-btn">转换</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="merge-tab" class="tab-content">
+            <div class="merge-section">
+                <h2>合并页面</h2>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('=== Script loaded ===');
+        
+        // Test 1: Check if DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== DOMContentLoaded ===');
+            
+            const excelFile = document.getElementById('excelFile');
+            const convertBtn = document.getElementById('convertBtn');
+            const fileInputContainer = document.querySelector('.file-input-container');
+            
+            console.log('excelFile:', excelFile ? 'found' : 'NOT FOUND');
+            console.log('convertBtn:', convertBtn ? 'found' : 'NOT FOUND');
+            console.log('fileInputContainer:', fileInputContainer ? 'found' : 'NOT FOUND');
+            
+            // Test file input change
+            excelFile.addEventListener('change', function(e) {
+                console.log('=== File Change Event ===');
+                console.log('Files:', this.files.length);
+                
+                if (this.files.length > 0) {
+                    const file = this.files[0];
+                    console.log('File name:', file.name);
+                    
+                    // Show success message
+                    const existing = document.querySelector('.file-success-message');
+                    if (existing) existing.remove();
+                    
+                    const fileInfo = document.createElement('div');
+                    fileInfo.className = 'file-success-message';
+                    fileInfo.innerHTML = `
+                        <div class="file-info-content">
+                            <div class="file-icon">✅</div>
+                            <div class="file-details">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-meta">
+                                    <span>大小：${(file.size/1024).toFixed(2)} KB</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log('Inserting message...');
+                    console.log('fileInputContainer.parentNode:', fileInputContainer.parentNode);
+                    console.log('fileInputContainer.nextSibling:', fileInputContainer.nextSibling);
+                    
+                    fileInputContainer.parentNode.insertBefore(fileInfo, fileInputContainer.nextSibling);
+                    console.log('Message inserted!');
+                }
+            });
+            
+            // Test tab switching
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            console.log('Tab buttons found:', tabButtons.length);
+            
+            tabButtons.forEach(function(btn) {
+                console.log('Binding tab button:', btn.dataset.tab);
+                btn.addEventListener('click', function() {
+                    console.log('=== Tab Clicked ===');
+                    console.log('Tab ID:', this.dataset.tab);
+                    
+                    const tabId = this.dataset.tab;
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById(tabId + '-tab').classList.add('active');
+                    
+                    console.log('Tab switched successfully!');
+                });
+            });
+            
+            console.log('=== All bindings complete ===');
+        });
+    </script>
+</body>
+</html>

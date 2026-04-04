@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按钮修复验证</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .test-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 99999;
+            font-family: monospace;
+            font-size: 13px;
+            max-width: 400px;
+        }
+        .test-status div { margin: 5px 0; }
+        .success { color: #9f9; }
+        .error { color: #f99; }
+    </style>
+</head>
+<body>
+    <div id="testStatus" class="test-status">
+        <div>🔍 按钮修复验证测试</div>
+        <div id="statusContent">加载中...</div>
+    </div>
+
+    <div class="container">
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="convert" id="btn1">
+                <span class="tab-icon">📤</span>
+                Excel 转 HTML
+            </button>
+            <button class="tab-btn" data-tab="merge" id="btn2">
+                <span class="tab-icon">🔗</span>
+                Excel 合并
+            </button>
+        </div>
+
+        <div id="convert-tab" class="tab-content active">
+            <div class="upload-section">
+                <h2>Excel 转 HTML</h2>
+                <p>这是转换页面内容</p>
+            </div>
+        </div>
+
+        <div id="merge-tab" class="tab-content">
+            <div class="merge-section">
+                <h2>Excel 合并</h2>
+                <p>这是合并页面内容</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="utils.js"></script>
+    <script src="app-core.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        const statusDiv = document.getElementById('statusContent');
+        let logs = [];
+        
+        function updateStatus(msg, type) {
+            logs.push(`<div class="${type}">${msg}</div>`);
+            statusDiv.innerHTML = logs.join('');
+        }
+        
+        window.addEventListener('DOMContentLoaded', function() {
+            updateStatus('✅ 页面加载完成', 'success');
+            
+            const btn1 = document.getElementById('btn1');
+            const btn2 = document.getElementById('btn2');
+            
+            updateStatus(`按钮 1 (convert): ${btn1 ? '存在' : '不存在'}`, 'success');
+            updateStatus(`按钮 2 (merge): ${btn2 ? '存在' : '不存在'}`, 'success');
+            updateStatus(`按钮 2 的 dataset: ${btn2 ? btn2.dataset.tab : 'N/A'}`, 'success');
+            
+            // 测试点击
+            setTimeout(function() {
+                updateStatus('🔍 请点击"Excel 合并"按钮测试...', 'success');
+                
+                // 监听点击
+                btn2.addEventListener('click', function() {
+                    updateStatus('✅ 按钮 2 被点击了！', 'success');
+                    
+                    const isActive = this.classList.contains('active');
+                    updateStatus(`按钮 active 状态：${isActive ? '已激活' : '未激活'}`, isActive ? 'success' : 'error');
+                    
+                    const content = document.getElementById('merge-tab');
+                    const contentVisible = window.getComputedStyle(content).display !== 'none';
+                    updateStatus(`合并页面可见性：${contentVisible ? '可见 ✅' : '不可见 ❌'}`, contentVisible ? 'success' : 'error');
+                    
+                    if (isActive && contentVisible) {
+                        updateStatus('🎉 按钮功能完全正常！', 'success');
+                    } else {
+                        updateStatus('⚠️ 按钮点击但功能异常', 'error');
+                    }
+                });
+                
+                updateStatus('✅ 点击事件监听器已绑定', 'success');
+            }, 500);
+        });
+        
+        // 全局错误捕获
+        window.addEventListener('error', function(e) {
+            updateStatus(`❌ 错误：${e.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

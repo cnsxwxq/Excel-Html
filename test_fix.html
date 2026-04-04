@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试修复 - 向心链</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-btn {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-btn:hover {
+            background: #764ba2;
+        }
+        .log {
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 修复测试页面</h1>
+    
+    <div class="test-section">
+        <h2>测试 1：标签页切换功能</h2>
+        <p>点击下面的按钮测试标签页切换是否正常工作：</p>
+        <button class="test-btn" onclick="testTabSwitch('convert')">切换到 Excel 转 HTML</button>
+        <button class="test-btn" onclick="testTabSwitch('merge')">切换到 Excel 合并</button>
+        <div id="tabTestResult" class="status" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 2：文件上传状态显示</h2>
+        <p>选择一个 Excel 文件测试上传状态显示：</p>
+        <input type="file" id="testFileInput" accept=".xlsx,.xls">
+        <div id="fileTestResult" class="status" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>控制台日志</h2>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>操作说明</h2>
+        <ol>
+            <li>打开浏览器的开发者工具（F12）</li>
+            <li>查看 Console 标签页中的日志输出</li>
+            <li>测试标签切换功能，查看是否有错误日志</li>
+            <li>测试文件上传，查看是否显示文件状态</li>
+        </ol>
+    </div>
+    
+    <script>
+        // 日志输出函数
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type}]`, message);
+        }
+        
+        // 测试标签切换
+        function testTabSwitch(tabId) {
+            log('开始测试标签切换：' + tabId);
+            
+            try {
+                // 检查 MergeModule 是否存在
+                if (typeof window.MergeModule !== 'undefined') {
+                    log('MergeModule 已加载', 'success');
+                    
+                    // 检查 switchTab 方法
+                    if (typeof window.MergeModule.switchTab === 'function') {
+                        log('调用 switchTab 方法', 'info');
+                        window.MergeModule.switchTab(tabId);
+                        
+                        const resultDiv = document.getElementById('tabTestResult');
+                        resultDiv.style.display = 'block';
+                        resultDiv.innerHTML = `✅ 标签切换成功：${tabId}`;
+                        log('标签切换成功', 'success');
+                    } else {
+                        log('错误：switchTab 方法不存在', 'error');
+                        showError('switchTab 方法不存在');
+                    }
+                } else {
+                    log('错误：MergeModule 未加载', 'error');
+                    showError('MergeModule 未加载，请检查 script.js 是否正确加载');
+                }
+            } catch (err) {
+                log('错误：' + err.message, 'error');
+                showError('标签切换失败：' + err.message);
+            }
+        }
+        
+        // 显示错误
+        function showError(message) {
+            const resultDiv = document.getElementById('tabTestResult');
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#ffebee';
+            resultDiv.style.borderColor = '#f44336';
+            resultDiv.innerHTML = '❌ ' + message;
+        }
+        
+        // 测试文件上传
+        document.getElementById('testFileInput').addEventListener('change', function(e) {
+            log('文件选择事件触发');
+            
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                log('选择的文件：' + file.name, 'success');
+                
+                const resultDiv = document.getElementById('fileTestResult');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <strong>✅ 文件选择成功</strong><br>
+                    文件名：${file.name}<br>
+                    文件大小：${(file.size / 1024).toFixed(2)} KB<br>
+                    文件类型：${file.type || 'Excel 文件'}
+                `;
+                
+                // 测试 showFileSuccess 函数
+                if (typeof showFileSuccess === 'function') {
+                    log('调用 showFileSuccess 函数', 'info');
+                    showFileSuccess(file);
+                } else {
+                    log('警告：showFileSuccess 函数不存在', 'warning');
+                }
+            }
+        });
+        
+        // 页面加载完成
+        window.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成', 'success');
+            log('检查 MergeModule 是否存在...');
+            
+            if (typeof window.MergeModule !== 'undefined') {
+                log('✅ MergeModule 已加载', 'success');
+                log('MergeModule 版本：' + (window.MergeModule.version || '未知'));
+            } else {
+                log('❌ MergeModule 未加载', 'error');
+            }
+        });
+        
+        // 监听所有错误
+        window.addEventListener('error', function(e) {
+            log('全局错误：' + e.message, 'error');
+        });
+    </script>
+    
+    <!-- 加载原始脚本文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="utils.js"></script>
+    <script src="app-core.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证修复</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 900px;
+            margin: 0 auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 2px solid #22c55e;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #ef4444;
+        }
+        .status.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 2px solid #f59e0b;
+        }
+        .check-list {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .check-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .check-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            width: 30px;
+            text-align: center;
+        }
+        .check-text {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .check-status {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .check-status.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .check-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #4f46e5;
+        }
+        .success { border-left-color: #22c55e; }
+        .error { border-left-color: #ef4444; }
+        .warning { border-left-color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 验证修复</h1>
+        <p class="subtitle">检查 MergeModule 所有关键方法是否可用</p>
+        
+        <div id="overallStatus" class="status warning">
+            ⏳ 正在检查...
+        </div>
+        
+        <div class="check-list" id="checkList">
+            <!-- 检查项将动态生成 -->
+        </div>
+        
+        <div>
+            <button onclick="runAllChecks()">🔄 重新检查</button>
+            <button onclick="testSwitchTab()">测试 switchTab</button>
+            <button onclick="testFileUpload()">测试文件上传</button>
+            <button onclick="clearLogs()">清空日志</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        const logEl = document.getElementById('log');
+        const checkListEl = document.getElementById('checkList');
+        const statusEl = document.getElementById('overallStatus');
+        
+        function addLog(message, type = 'info') {
+            const now = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${now}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            logEl.innerHTML = '';
+            addLog('日志已清空', 'success');
+        }
+        
+        function checkMethod(name) {
+            const exists = typeof window.MergeModule !== 'undefined' && 
+                          typeof window.MergeModule[name] === 'function';
+            return {
+                name: name,
+                exists: exists,
+                type: exists ? 'function' : 'undefined'
+            };
+        }
+        
+        function renderCheckItem(check) {
+            const icon = check.exists ? '✅' : '❌';
+            const statusClass = check.exists ? 'success' : 'error';
+            const statusText = check.exists ? '可用' : '缺失';
+            
+            return `
+                <div class="check-item">
+                    <div class="check-icon">${icon}</div>
+                    <div class="check-text">
+                        <strong>MergeModule.${check.name}</strong>
+                        <br>类型：${check.type}
+                    </div>
+                    <div class="check-status ${statusClass}">${statusText}</div>
+                </div>
+            `;
+        }
+        
+        function runAllChecks() {
+            addLog('====== 开始检查 ======', 'info');
+            
+            const methods = [
+                'init',
+                'switchTab',
+                'addFiles',
+                'removeFile',
+                'clearAllFiles',
+                'validateFiles',
+                'mergeFiles',
+                'finalizeMerge',
+                'renderFileList',
+                'showError'
+            ];
+            
+            const results = methods.map(name => checkMethod(name));
+            
+            checkListEl.innerHTML = results.map(renderCheckItem).join('');
+            
+            const allExist = results.every(r => r.exists);
+            
+            if (allExist) {
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '✅ 所有方法都已正确加载！';
+                addLog('✅ 所有方法检查通过', 'success');
+            } else {
+                const missing = results.filter(r => !r.exists).map(r => r.name);
+                statusEl.className = 'status error';
+                statusEl.innerHTML = `❌ 缺失 ${missing.length} 个方法：${missing.join(', ')}`;
+                addLog(`❌ 缺失方法：${missing.join(', ')}`, 'error');
+            }
+            
+            return results;
+        }
+        
+        function testSwitchTab() {
+            addLog('====== 测试 switchTab ======', 'info');
+            
+            if (typeof window.MergeModule === 'undefined') {
+                addLog('❌ MergeModule 未定义', 'error');
+                return;
+            }
+            
+            if (typeof window.MergeModule.switchTab !== 'function') {
+                addLog('❌ switchTab 方法不存在', 'error');
+                return;
+            }
+            
+            try {
+                addLog('调用 switchTab("merge")...');
+                window.MergeModule.switchTab('merge');
+                addLog('✅ switchTab 调用成功', 'success');
+                
+                setTimeout(() => {
+                    addLog('调用 switchTab("convert")...');
+                    window.MergeModule.switchTab('convert');
+                    addLog('✅ 切换回 convert 标签', 'success');
+                }, 1000);
+            } catch (e) {
+                addLog('❌ 调用失败：' + e.message, 'error');
+            }
+        }
+        
+        function testFileUpload() {
+            addLog('====== 测试文件上传功能 ======', 'info');
+            
+            if (typeof window.MergeModule === 'undefined') {
+                addLog('❌ MergeModule 未定义', 'error');
+                return;
+            }
+            
+            if (typeof window.MergeModule.addFiles !== 'function') {
+                addLog('❌ addFiles 方法不存在', 'error');
+                return;
+            }
+            
+            addLog('✅ addFiles 方法存在', 'success');
+            addLog('提示：请在主页面中实际测试文件上传', 'warning');
+        }
+        
+        // 页面加载时自动检查
+        window.addEventListener('DOMContentLoaded', function() {
+            addLog('页面加载完成', 'success');
+            
+            setTimeout(function() {
+                if (typeof window.MergeModule !== 'undefined') {
+                    addLog('✅ MergeModule 已加载', 'success');
+                    addLog('版本：' + (window.MergeModule.version || '未知'), 'info');
+                    runAllChecks();
+                } else {
+                    addLog('❌ MergeModule 尚未加载，请稍后重试', 'error');
+                    statusEl.className = 'status error';
+                    statusEl.innerHTML = '❌ MergeModule 未加载';
+                }
+            }, 1000);
+        });
+    </script>
+    
+    <!-- 加载主脚本 -->
+    <script src="script.js"></script>
+</body>
+</html>
