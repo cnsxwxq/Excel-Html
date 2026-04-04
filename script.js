@@ -1975,6 +1975,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             processFileChunk();
 
+        finalizeMerge: function(allRows, enableDedup, dedupColumn, validFiles) {
+            const self = this;
+
             this.updateProgress(80, '正在合并数据...');
             this.log('info', '合并完成，共 ' + allRows.length + ' 行');
 
@@ -2006,7 +2009,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.mergeCompleted = true;
             this.updateMergeButton();
             
-            this.log('success', '合并完成！总行数: ' + allRows.length);
+            this.log('success', '合并完成！总行数：' + allRows.length);
             
             this.showMergeSuccessNotification(allRows.length, validFiles.length);
             
